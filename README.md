@@ -4,4 +4,4 @@ This is purely a bit of fun I had after accidently deleting a load of config fil
 I managed to recover the files (tens of thousands), but completely lost directory structures and file names.
 This repo contains some code to explore the files with some unsupervised deep learning - Doc2Vec.
 
-See my blog post about this [here](https://meltzerpete.github.io/file-recovery.html).
+See my blog post about this [here](https://meltzerpete.github.io/2019-04-27-file-recovery.html).
