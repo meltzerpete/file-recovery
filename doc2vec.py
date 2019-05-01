@@ -118,11 +118,13 @@ scores = []
 for num_classes in class_range:
     class_string = 'K-Means ' + str(num_classes) + '-classes'
     kmeans = KMeans(num_classes, max_iter=1000)
-    score = kmeans.fit(vecs).score(vecs)
+    score = kmeans.fit(vecs).inertia_
     scores.append(score)
     df[class_string] = kmeans.predict(vecs)
     show_plot(df, class_string)
 
 # k-means score
+plt.xlabel("No. of Clusters")
+plt.ylabel("Inertia")
 plt.plot(class_range, scores, 'x-')
 plt.show()
