@@ -6,10 +6,15 @@ import numpy as np
 import pandas as pd
 import smart_open
 from sklearn.cluster import KMeans
+from sklearn.manifold import TSNE
 
 # Set file names
 lee_train_file = 'corpus.txt'
-model_file = 'doc2vec-window80-min-max.model'
+model_file = 'doc2vec-vec-100-window-80-epochs-40.model'
+
+vector_size = 100
+window = 80
+epochs = 40
 
 file_list = []
 
@@ -28,36 +33,6 @@ def read_corpus(fname, tokens_only=False):
                 # For training data, add tags
                 yield gensim.models.doc2vec.TaggedDocument(gensim.utils.simple_preprocess(line, min_len=1, max_len=50),
                                                            [i])
-
-
-corpus = list(read_corpus(lee_train_file))
-
-if os.path.exists(model_file):
-    print(f'Loading Model: {model_file}')
-    model = gensim.models.Doc2Vec.load(model_file)
-else:
-    print('Building Model')
-    model = gensim.models.doc2vec.Doc2Vec(vector_size=2, window=80, min_count=2, epochs=40)
-
-    print('Building Vocab')
-    model.build_vocab(corpus)
-
-    print('Training Model')
-    model.train(corpus, total_examples=model.corpus_count, epochs=model.epochs)
-
-    print(f'Saving model: {model_file}')
-    model.save(model_file)
-
-print('Inferring Vectors')
-vecs = np.array([model.infer_vector(line.words) for line in corpus])
-
-df = pd.DataFrame(vecs)
-df['file'] = file_list
-
-print('Plotting')
-plt.plot(df[0], df[1], '.')
-plt.savefig('plot.pdf')
-plt.show()
 
 
 def get_middle(group):
@@ -113,14 +88,48 @@ def show_plot(df, label, title=None, print_examples=True):
     plt.show()
 
 
+corpus = list(read_corpus(lee_train_file))
+
+if os.path.exists(model_file):
+    print(f'Loading Model: {model_file}')
+    model = gensim.models.Doc2Vec.load(model_file)
+else:
+    print('Building Model')
+    model = gensim.models.doc2vec.Doc2Vec(vector_size=vector_size, window=window, min_count=2, epochs=epochs)
+
+    print('Building Vocab')
+    model.build_vocab(corpus)
+
+    print('Training Model')
+    model.train(corpus, total_examples=model.corpus_count, epochs=model.epochs)
+
+    print(f'Saving model: {model_file}')
+    model.save(model_file)
+
+print('Inferring Vectors')
+vecs = np.array([model.infer_vector(line.words) for line in corpus])
+
+print("Fitting TSNE")
+tsne = TSNE()
+reduced = tsne.fit_transform(vecs)
+
+df = pd.DataFrame(reduced)
+df['file'] = file_list
+
+print('Plotting')
+plt.plot(df[0], df[1], '.')
+plt.savefig('plot.pdf')
+plt.show()
+
+print("Clustering")
 class_range = range(1, 15)
 scores = []
 for num_classes in class_range:
     class_string = 'K-Means ' + str(num_classes) + '-classes'
     kmeans = KMeans(num_classes, max_iter=1000)
-    score = kmeans.fit(vecs).inertia_
+    score = kmeans.fit(reduced).inertia_
     scores.append(score)
-    df[class_string] = kmeans.predict(vecs)
+    df[class_string] = kmeans.predict(reduced)
     show_plot(df, class_string)
 
 # k-means score
